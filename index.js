@@ -2,7 +2,7 @@
     const {writeFileSync} = require('fs');
     require('dotenv').config();
     const puppeteer = require('puppeteer');
-    const browser = await puppeteer.launch({headless: false});
+    const browser = await puppeteer.launch({headless: true, ignoreHTTPSErrors: true});
     const page = await browser.newPage();
     const axios = require('axios');
 
