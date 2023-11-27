@@ -1,104 +1,130 @@
 (async () => {
+    const {writeFileSync} = require('fs');
+    require('dotenv').config();
     const puppeteer = require('puppeteer');
     const browser = await puppeteer.launch({headless: false});
     const page = await browser.newPage();
+    const axios = require('axios');
 
-    await page.goto('http://localhost:81/journaux/tribune-de-lyon/editions/07-12-2023/annonces/saisie/constitution-societe-commerciale');
+    let noticesTypes = await axios.get(process.env.BASE_URL + '/api/notices/types').then(restult => restult.data.noticeType)
 
-    await page.waitForNetworkIdle();
+    let malcomJson = [];
 
-    await page.evaluate(async () => {
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+    for (let notice of Object.values(noticesTypes)) {
+        let response = await page.goto(
+            process.env.BASE_URL
+            + process.env.BASE_QUERY_PATH
+            + '/'
+            + notice.slug
+        );
+
+        if ([500, 404, 403].includes(response.status())) {
+            continue;
         }
 
-        let allChildNodes;
+        await page.waitForNetworkIdle();
 
-        let parent = document.getElementById("form_notice");
+        let noticeForm = await page.evaluate(async () => {
+            let allChildNodes;
 
-        allChildNodes = parent.querySelectorAll('.form-control')
+            let parent = document.getElementById("form_notice");
 
-        let formElements = [];
-        let tagNames = ['input', 'textarea', 'select'];
+            allChildNodes = parent.querySelectorAll('.form-control')
 
-        for (let i = 0; i < allChildNodes.length; i++) {
-            const child = allChildNodes[i];
+            let formElements = [];
+            let tagNames = ['input', 'textarea', 'select'];
 
-            if (child.nodeType !== Node.ELEMENT_NODE) {
-                continue;
+            for (let i = 0; i < allChildNodes.length; i++) {
+                const child = allChildNodes[i];
+
+                if (child.nodeType !== Node.ELEMENT_NODE) {
+                    continue;
+                }
+
+                let tagName = child.tagName.toLowerCase();
+
+                if (!tagNames.includes(tagName)) {
+                    continue;
+                }
+
+                if (child?.type === 'hidden') {
+                    continue;
+                }
+
+                formElements.push(child);
             }
 
-            let tagName = child.tagName.toLowerCase();
+            console.log(formElements)
 
-            if (!tagNames.includes(tagName)) {
-                continue;
+            let finalFormElements = [];
+
+            function getType(el) {
+                let type;
+
+                if (el.classList.contains('datepicker')) {
+                    return 'date';
+                }
+
+                let tagName = el.tagName.toLowerCase();
+
+                switch (tagName) {
+                    case 'textarea':
+                        type = 'input';
+                        break
+                    case 'select':
+                        type = 'select_multiple';
+                        break;
+                    default:
+                        type = tagName
+                }
+
+                return type;
             }
 
-            if (child?.type === 'hidden') {
-                continue;
+            function buildSelect(el) {
+                if (el.tagName.toLowerCase() !== 'select') {
+                    return;
+                }
+
+                return {
+                    values: [...el.options].map(o => o.value),
+                    options: [...el.options].map(o => o.text),
+                    style: {
+                        "min_width": "100%"
+                    },
+                    radio: false,
+                    multiple: el.multiple,
+                }
             }
 
-            formElements.push(child);
-        }
+            for (let i = 0; i < formElements.length; i++) {
+                let child = formElements[i];
 
-        console.log(formElements)
-
-        let finalFormElements = [];
-
-        function getType(el) {
-            let type;
-
-            if (el.classList.contains('datepicker')) {
-                return 'date';
+                finalFormElements.push({
+                    id: (new Date()).getTime(),
+                    name: document.querySelector('label[for=' + child.id + ']')?.innerText.replace(' :', '') || child.placeholder,
+                    type: getType(child),
+                    required: child.required,
+                    size: 24,
+                    ...buildSelect(child),
+                });
             }
 
-            let tagName = el.tagName.toLowerCase();
+            return finalFormElements;
+        });
 
-            switch (tagName) {
-                case 'textarea':
-                    type = 'input';
-                    break
-                case 'select':
-                    type = 'select_multiple';
-                    break;
-                default:
-                    type = tagName
-            }
+        malcomJson.push({
+            form: noticeForm,
+            notice,
+        });
+    }
 
-            return type;
-        }
+    writeFileSync(
+        './malcom-' + (new Date()).getTime() + '.json',
+        JSON.stringify(malcomJson, null, 2)
+    );
 
-        function buildSelect(el) {
-            if (el.tagName.toLowerCase() !== 'select') {
-                return;
-            }
+    await browser.close();
 
-            return {
-                values: [...el.options].map(o => o.value),
-                options: [...el.options].map(o => o.text),
-                style: {
-                    "min_width": "100%"
-                },
-                radio: false,
-                multiple: el.multiple,
-            }
-        }
-
-        for (let i = 0; i < formElements.length; i++) {
-            let child = formElements[i];
-
-            finalFormElements.push({
-                id: (new Date()).getTime(),
-                name: document.querySelector('label[for=' + child.id + ']')?.innerText.replace(' :', '') || child.placeholder,
-                type: getType(child),
-                required: child.required,
-                size: 24,
-                ...buildSelect(child),
-            });
-
-            await sleep(100);
-        }
-
-        console.log(JSON.stringify(finalFormElements));
-    });
+    return malcomJson;
 })()
