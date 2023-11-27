@@ -14,25 +14,7 @@
 
         let allChildNodes;
 
-        // function parseChildNode(parent) {
-        //     for (let i = 0; i < parent.childNodes.length; i++) {
-        //         const child = parent.childNodes[i];
-        //
-        //         if (child.hasChildNodes()) {
-        //             if (window.getComputedStyle(child).display === 'none') {
-        //                 continue;
-        //             }
-        //
-        //             parseChildNode(child);
-        //         } else {
-        //             allChildNodes.push(child)
-        //         }
-        //     }
-        // }
-
         let parent = document.getElementById("form_notice");
-
-        // parseChildNode(parent);
 
         allChildNodes = parent.querySelectorAll('.form-control')
 
@@ -52,7 +34,7 @@
                 continue;
             }
 
-            if (child?.type === 'hidden') { //|| window.getComputedStyle(child).display === 'none') {
+            if (child?.type === 'hidden') {
                 continue;
             }
 
@@ -90,7 +72,7 @@
             if (el.tagName.toLowerCase() !== 'select') {
                 return;
             }
-            
+
             return {
                 values: [...el.options].map(o => o.value),
                 options: [...el.options].map(o => o.text),
