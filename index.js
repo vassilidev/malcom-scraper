@@ -6,7 +6,7 @@
     const page = await browser.newPage();
     const axios = require('axios');
 
-    let noticesTypes = await axios.get(process.env.BASE_URL + '/api/notices/types').then(restult => restult.data.noticeType)
+    let noticesTypes = await axios.get(process.env.BASE_URL + '/api/notices/types').then(result => result.data.noticeType)
 
     let malcomJson = [];
 
@@ -25,11 +25,9 @@
         await page.waitForNetworkIdle();
 
         let noticeForm = await page.evaluate(async () => {
-            let allChildNodes;
-
             let parent = document.getElementById("form_notice");
 
-            allChildNodes = parent.querySelectorAll('.form-control')
+            let allChildNodes = parent.querySelectorAll('.form-control')
 
             let formElements = [];
             let tagNames = ['input', 'textarea', 'select'];
@@ -53,8 +51,6 @@
 
                 formElements.push(child);
             }
-
-            console.log(formElements)
 
             let finalFormElements = [];
 

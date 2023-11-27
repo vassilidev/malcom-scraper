@@ -2,6 +2,6 @@ clone
 
 npm i
 
-cp .env.exemple .env
+cp .env.example .env
 
 node index
