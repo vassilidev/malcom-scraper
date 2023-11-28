@@ -97,13 +97,19 @@
                 }
             }
 
+            function uuidv4() {
+                return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+                    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+                );
+            }
+
             for (let i = 0; i < formElements.length; i++) {
                 let child = formElements[i];
                 let label = document.querySelector('label[for=' + child.id + ']');
 
                 finalFormElements.push({
-                    id: (new Date()).getTime(),
-                    name: label?.innerText.replace(' :', '') || child.placeholder,
+                    id: uuidv4(),
+                    name: label?.innerText.replace(' :', '') || child.placeholder || uuidv4(),
                     type: getType(child),
                     domId: child.id,
                     domName: child.name,
