@@ -10,13 +10,17 @@
 
     let malcomJson = [];
 
+    console.log("Found " + Object.keys(noticesTypes).length + " notices")
+
     for (let notice of Object.values(noticesTypes)) {
-        let response = await page.goto(
-            process.env.BASE_URL
+        let url = process.env.BASE_URL
             + process.env.BASE_QUERY_PATH
             + '/'
-            + notice.slug
-        );
+            + notice.slug;
+
+        console.log("going to " + url);
+
+        let response = await page.goto(url);
 
         if ([500, 404, 403].includes(response.status())) {
             continue;
@@ -95,14 +99,19 @@
 
             for (let i = 0; i < formElements.length; i++) {
                 let child = formElements[i];
+                let label = document.querySelector('label[for=' + child.id + ']');
 
                 finalFormElements.push({
                     id: (new Date()).getTime(),
-                    name: document.querySelector('label[for=' + child.id + ']')?.innerText.replace(' :', '') || child.placeholder,
+                    name: label?.innerText.replace(' :', '') || child.placeholder,
                     type: getType(child),
+                    domId: child.id,
+                    domName: child.name,
                     required: child.required,
-                    size: 24,
                     ...buildSelect(child),
+                    size: 24,
+                    labelElement: label?.outerHTML,
+                    inputElement: child?.outerHTML,
                 });
             }
 
