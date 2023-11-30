@@ -11,7 +11,6 @@
     let malcomJson = [];
 
     console.log("Found " + Object.keys(noticesTypes).length + " notices")
-
     for (let notice of Object.values(noticesTypes)) {
         let url = process.env.BASE_URL
             + process.env.BASE_QUERY_PATH
@@ -26,7 +25,7 @@
             continue;
         }
 
-        await page.waitForNetworkIdle();
+        await page.waitForSelector("#form_notice");
 
         let noticeForm = await page.evaluate(async () => {
             let parent = document.getElementById("form_notice");
@@ -118,6 +117,8 @@
                     size: 24,
                     labelElement: label?.outerHTML,
                     inputElement: child?.outerHTML,
+                    defaultValue : child.value,
+                    placeholder: child.placeholder
                 });
             }
 
