@@ -12,9 +12,15 @@
 
     console.log("Found " + Object.keys(noticesTypes).length + " notices")
 
-    var courts = readFileSync('courts.json');
+    var courts = await axios.get(process.env.BASE_URL + '/api/courts').then(result => result.data);
 
-    courts = JSON.parse(courts);
+    var courtIds = [];
+    var courtValues = [];
+
+    courts.forEach(obj => {
+        courtIds.push(obj.id);
+        courtValues.push(obj.id);
+    });
 
     for (let notice of Object.values(noticesTypes)) {
         let url = process.env.BASE_URL
@@ -32,7 +38,7 @@
 
         await page.waitForSelector("#form_notice");
 
-        let noticeForm = await page.evaluate(async ({courts}) => {
+        let noticeForm = await page.evaluate(async ({courtIds, courtValues}) => {
             let parent = document.getElementById("form_notice");
 
             let allChildNodes = parent.querySelectorAll('.form-control')
@@ -90,12 +96,15 @@
                     return;
                 }
 
-                let options = [...el.options].map(o => o.text);
-                let values = [...el.options].map(o => o.value);
+                let options;
+                let values;
 
                 if (el.id === 'field_company_court_id') {
-                    options = courts['cities'];
-                    values = courts['ids'];
+                    options = courtValues;
+                    values = courtIds;
+                } else {
+                    options = [...el.options].map(o => o.text);
+                    values = [...el.options].map(o => o.value);
                 }
 
                 return {
@@ -181,7 +190,7 @@
             }
 
             return finalFormElements;
-        }, {courts});
+        }, {courtIds, courtValues});
 
         malcomJson.push({
             form: noticeForm,
