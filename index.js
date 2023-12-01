@@ -13,6 +13,9 @@
     console.log("Found " + Object.keys(noticesTypes).length + " notices")
 
     var courts = await axios.get(process.env.BASE_URL + '/api/courts').then(result => result.data);
+    var clientKeys = readFileSync('./clientMatching.json');
+
+    clientKeys = JSON.parse(clientKeys);
 
     var courtIds = [];
     var courtValues = [];
@@ -38,7 +41,7 @@
 
         await page.waitForSelector("#form_notice");
 
-        let noticeForm = await page.evaluate(async ({courtIds, courtValues}) => {
+        let noticeForm = await page.evaluate(async ({courtIds, courtValues, clientKeys}) => {
             let parent = document.getElementById("form_notice");
 
             let allChildNodes = parent.querySelectorAll('.form-control')
@@ -118,6 +121,19 @@
                 }
             }
 
+            function buildClientApi(el) {
+                let clientKey = '';
+
+                if (Object.keys(clientKeys).includes(el.id)) {
+                    clientKey = clientKeys[el.id]
+                }
+
+                return {
+                    clientKey,
+                    hideOnValue: true,
+                }
+            }
+
             function uuidv4() {
                 return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
                     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
@@ -180,6 +196,7 @@
                     domName: child.name,
                     required: child.required,
                     ...buildSelect(child),
+                    ...buildClientApi(child),
                     size: 24,
                     labelElement: label?.outerHTML,
                     inputElement: child?.outerHTML,
@@ -190,7 +207,7 @@
             }
 
             return finalFormElements;
-        }, {courtIds, courtValues});
+        }, {courtIds, courtValues, clientKeys});
 
         malcomJson.push({
             form: noticeForm,

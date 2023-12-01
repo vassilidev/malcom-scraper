@@ -1,0 +1,10 @@
+{
+  "field_company_capital": "capital",
+  "field_company_siret": "siret",
+  "field_company_denomination": "denomination",
+  "field_company_acronym": "acronym",
+  "field_company_address_line1": "street",
+  "field_company_address_postalcode": "postalCode",
+  "field_company_address_city": "city",
+  "field_company_type": "juridicForm"
+}
