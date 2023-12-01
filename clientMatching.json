@@ -6,5 +6,6 @@
   "field_company_address_line1": "street",
   "field_company_address_postalcode": "postalCode",
   "field_company_address_city": "city",
-  "field_company_type": "juridicForm"
+  "field_company_type": "juridicForm",
+  "field_company_court_id": "rcs"
 }
