@@ -191,6 +191,12 @@
                     name = capitalizeFirstLetter(name);
                 }
 
+                let defaultValue = child.value;
+
+                if (child.id === 'field_company_court_id') {
+                    defaultValue = null;
+                }
+
                 finalFormElements.push({
                     id: uuidv4(),
                     name,
@@ -203,7 +209,7 @@
                     size: 24,
                     labelElement: label?.outerHTML,
                     inputElement: child?.outerHTML,
-                    defaultValue: child.value,
+                    defaultValue,
                     placeholder: child.placeholder,
                     needToBeFix,
                 });
