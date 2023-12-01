@@ -1,5 +1,5 @@
 (async () => {
-    const {writeFileSync} = require('fs');
+    const {writeFileSync, readFileSync} = require('fs');
     require('dotenv').config();
     const puppeteer = require('puppeteer');
     const browser = await puppeteer.launch({headless: true, ignoreHTTPSErrors: true});
@@ -11,6 +11,11 @@
     let malcomJson = [];
 
     console.log("Found " + Object.keys(noticesTypes).length + " notices")
+
+    var courts = readFileSync('courts.json');
+
+    courts = JSON.parse(courts);
+
     for (let notice of Object.values(noticesTypes)) {
         let url = process.env.BASE_URL
             + process.env.BASE_QUERY_PATH
@@ -27,7 +32,7 @@
 
         await page.waitForSelector("#form_notice");
 
-        let noticeForm = await page.evaluate(async () => {
+        let noticeForm = await page.evaluate(async ({courts}) => {
             let parent = document.getElementById("form_notice");
 
             let allChildNodes = parent.querySelectorAll('.form-control')
@@ -68,7 +73,7 @@
 
                 switch (tagName) {
                     case 'textarea':
-                        type = 'input';
+                        type = 'textarea';
                         break
                     case 'select':
                         type = 'select_multiple';
@@ -85,9 +90,17 @@
                     return;
                 }
 
+                let options = [...el.options].map(o => o.text);
+                let values = [...el.options].map(o => o.value);
+
+                if (el.id === 'field_company_court_id') {
+                    options = courts['cities'];
+                    values = courts['ids'];
+                }
+
                 return {
-                    values: [...el.options].map(o => o.value),
-                    options: [...el.options].map(o => o.text),
+                    values,
+                    options,
                     style: {
                         "min_width": "100%"
                     },
@@ -102,13 +115,57 @@
                 );
             }
 
+            let excludedIds = [
+                'field_principal_header_title',
+                'field_principal_header_subtitle',
+            ];
+
             for (let i = 0; i < formElements.length; i++) {
                 let child = formElements[i];
+
+                if (excludedIds.includes(child.id)) {
+                    continue;
+                }
+
+                let forceLabel;
+
+                if (child.name.endsWith('_other]')) {
+                    forceLabel = 'Préciser';
+                }
+
                 let label = document.querySelector('label[for=' + child.id + ']');
+
+                let uuid = uuidv4();
+
+                let needToBeFix = false;
+
+                function capitalizeFirstLetter(string) {
+                    return string.charAt(0).toUpperCase() + string.slice(1);
+                }
+
+                let name = (forceLabel || label?.innerText.replace(' :', '') || child.placeholder || uuid);
+
+                if (name === 'SIRET et RCS') {
+                    name = 'SIRET';
+                }
+
+                if (name === uuid) {
+                    if (child.id === 'field_company_court_id') {
+                        name = 'RCS';
+                    } else if (child.id === 'meta_notice_new_organ_role') {
+                        name = 'Organe de direction';
+                    } else if (child.id === 'meta_notice_type') {
+                        name = "Type d'avis";
+                    } else {
+                        needToBeFix = true;
+                    }
+                } else {
+                    name = capitalizeFirstLetter(name);
+                }
 
                 finalFormElements.push({
                     id: uuidv4(),
-                    name: label?.innerText.replace(' :', '') || child.placeholder || uuidv4(),
+                    name,
                     type: getType(child),
                     domId: child.id,
                     domName: child.name,
@@ -117,13 +174,14 @@
                     size: 24,
                     labelElement: label?.outerHTML,
                     inputElement: child?.outerHTML,
-                    defaultValue : child.value,
-                    placeholder: child.placeholder
+                    defaultValue: child.value,
+                    placeholder: child.placeholder,
+                    needToBeFix,
                 });
             }
 
             return finalFormElements;
-        });
+        }, {courts});
 
         malcomJson.push({
             form: noticeForm,
@@ -132,7 +190,7 @@
     }
 
     writeFileSync(
-        './malcom-' + (new Date()).getTime() + '.json',
+        './malcom.json',
         JSON.stringify(malcomJson, null, 2)
     );
 
