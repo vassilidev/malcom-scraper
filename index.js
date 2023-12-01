@@ -20,9 +20,12 @@
     var courtIds = [];
     var courtValues = [];
 
+    courtIds.push('');
+    courtValues.push('Voir la liste')
+
     courts.forEach(obj => {
         courtIds.push(obj.id);
-        courtValues.push(obj.id);
+        courtValues.push(obj.name);
     });
 
     for (let notice of Object.values(noticesTypes)) {
